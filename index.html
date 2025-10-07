@@ -23,7 +23,7 @@
     .deleteBtn:hover{background:#b12b24;}
     h2{text-align:center;color:#2e7d32;margin-bottom:15px;}
     #searchCS{max-width:600px;margin:0 auto 30px auto;padding:12px;border-radius:8px;border:1px solid #ccc;display:block;}
-    table{width:90%;max-width:600px;margin:0 auto 40px auto;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    table{width:90%;max-width:900px;margin:0 auto 40px auto;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
     th,td{border:1px solid #ddd;padding:12px;text-align:center;}
     th{background:#2e7d32;color:white;}
     tr:nth-child(even){background:#f9f9f9;}
@@ -67,6 +67,22 @@
 
   <div class="registros" id="listaRegistros"></div>
 
+  <h2>Tabela de Registros</h2>
+  <table id="tabelaRegistros">
+    <thead>
+      <tr>
+        <th>CS</th>
+        <th>Tipo</th>
+        <th>Modelo</th>
+        <th>Tamanho</th>
+        <th>Código SAP</th>
+        <th>Motivo</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -86,7 +102,6 @@
     const db = getFirestore(app);
     window.db = db;
 
-    // 🔁 Carregar registros da nuvem ao abrir
     async function carregarDaNuvem() {
       const snapshot = await getDocs(collection(db, "registrosEPI"));
       const registros = [];
@@ -98,33 +113,23 @@
       localStorage.setItem("registrosEPI", JSON.stringify(registros));
       atualizarListaRegistros();
     }
-    window.carregarDaNuvem = carregarDaNuvem;
     carregarDaNuvem();
 
-    // 🔧 Dados EPIs
     const epiData = {
-      capacete: { "Suspensão Carneira com Jugular": { M:"6057580", G:"6014089" } },
-      oculos: { "Óculos Incolor": { Único:"6016960" }, "Óculos Cinza": { Único:"6016961" }, "Óculos Ampla Visão": { Único:"6008482" } },
-      botina: {
-        "Bota PVC sem Bico de Aço": { 35:"6002760",36:"6002732",37:"6002733",38:"6002734",39:"6002735",40:"6002736",41:"6002737",42:"6002738",43:"6002739",44:"6002740",45:"6018105"},
-        "Bota Vaqueta com Composite": {36:"6050775",37:"6050761",38:"6050760",39:"6050734",40:"6050768",41:"6050744",42:"6050759",43:"6050733",44:"6050743",45:"6050732",46:"6050767",47:"6049174"},
-        "Botina de Amarrar Antitorção": {34:"6054631",35:"6054630",36:"6054664",37:"6054622",38:"6054663",39:"6054672",40:"6054621",41:"6054683",42:"6054682",43:"6054681",44:"6054662",45:"6054661",46:"6054680",47:"6054671"}
-      },
-      colete: { "Colete Verde Limão": { M:"6027671",G:"6027672",GG:"6039623",XGG:"6057591"} },
-      protetorAuricular: { "Plug Silicone 3 Tamanhos": { P:"6016022",M:"6044293",G:"6057569"} },
-      luvas: { "Luva Resistência Mecânica": { 8:"6043567",9:"6043568",10:"6047676",11:"6052203"} },
-      uniforme: {
-        "Camisa Manga Curta": { PP:"6040852",P:"6040886",M:"6040925",G:"6040926",GG:"6040927",XG:"6040928" },
-        "Camisa Manga Longa": { PP:"6038450",P:"6040931",M:"6040932",G:"6040933",GG:"6040866" },
-        "Calça Cinza": { PP:"6040870",P:"6040872",M:"6040873",G:"6040895",GG:"6040897" }
-      }
+      capacete:{ "Suspensão Carneira com Jugular":{ M:"6057580", G:"6014089"} },
+      oculos:{ "Óculos Incolor":{ Único:"6016960"}, "Óculos Cinza":{ Único:"6016961"}, "Óculos Ampla Visão":{ Único:"6008482"} },
+      botina:{ "Bota PVC sem Bico de Aço":{ 35:"6002760",36:"6002732",37:"6002733",38:"6002734",39:"6002735",40:"6002736",41:"6002737",42:"6002738",43:"6002739",44:"6002740",45:"6018105"} },
+      colete:{ "Colete Verde Limão":{ M:"6027671",G:"6027672",GG:"6039623",XGG:"6057591"} },
+      protetorAuricular:{ "Plug Silicone 3 Tamanhos":{ P:"6016022",M:"6044293",G:"6057569"} },
+      luvas:{ "Luva Resistência Mecânica":{ 8:"6043567",9:"6043568",10:"6047676",11:"6052203"} },
+      uniforme:{ "Camisa Manga Curta":{ P:"6040886",M:"6040925",G:"6040926"}, "Calça Cinza":{ P:"6040872",M:"6040873",G:"6040895"} }
     };
 
     const tipoEpiSelect=document.getElementById("tipoEpi");
     const codigoEpiSelect=document.getElementById("codigoEpi");
     const codigoSelecionadoDiv=document.getElementById("codigoSelecionado");
     const listaRegistros=document.getElementById("listaRegistros");
-    const form=document.getElementById("epiForm");
+    const tabelaRegistros=document.getElementById("tabelaRegistros").querySelector("tbody");
     const searchCS=document.getElementById("searchCS");
 
     tipoEpiSelect.addEventListener("change",()=>{
@@ -164,24 +169,8 @@
       registros.push(novo);
       localStorage.setItem("registrosEPI",JSON.stringify(registros));
       atualizarListaRegistros();
-
-      // salvar no Firestore
-      const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
       await addDoc(collection(window.db,"registrosEPI"),novo);
     }
-
-    form.addEventListener("submit",e=>{
-      e.preventDefault();
-      const cs=document.getElementById("cs").value.trim();
-      const tipoEpi=tipoEpiSelect.value;
-      const valor=codigoEpiSelect.value;
-      if(!cs||!tipoEpi||!valor)return alert("Preencha todos os campos!");
-      const [modelo,tamanho]=valor.split("|");
-      const codigo=epiData[tipoEpi][modelo][tamanho];
-      const motivo=document.getElementById("motivo").value.trim();
-      salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo);
-      form.reset();codigoEpiSelect.disabled=true;codigoSelecionadoDiv.textContent="";
-    });
 
     async function excluirRegistro(index){
       const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
@@ -189,10 +178,8 @@
       registros.splice(index,1);
       localStorage.setItem("registrosEPI",JSON.stringify(registros));
       atualizarListaRegistros();
-
-      // apaga também no Firestore
-      const snapshot = await getDocs(collection(window.db, "registrosEPI"));
-      snapshot.forEach(async (docSnap)=>{
+      const snapshot=await getDocs(collection(window.db,"registrosEPI"));
+      snapshot.forEach(async(docSnap)=>{
         const d=docSnap.data();
         if(d.cs===registro.cs && d.data===registro.data){
           await deleteDoc(doc(window.db,"registrosEPI",docSnap.id));
@@ -204,12 +191,14 @@
       const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
       const filtro=searchCS.value.trim().toLowerCase();
       listaRegistros.innerHTML="";
+      tabelaRegistros.innerHTML="";
       const filtrados=registros.filter(r=>r.cs.toLowerCase().includes(filtro));
       if(filtrados.length===0){
         listaRegistros.innerHTML="<p style='text-align:center;color:#888;'>Nenhum registro encontrado.</p>";
         return;
       }
       filtrados.forEach((r,i)=>{
+        // CARD
         const card=document.createElement("div");
         card.className="card";
         card.innerHTML=`
@@ -222,8 +211,34 @@
           <button class="deleteBtn" onclick="excluirRegistro(${i})">Excluir</button>
         `;
         listaRegistros.appendChild(card);
+
+        // TABELA
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${r.cs}</td>
+          <td>${r.tipoEpi}</td>
+          <td>${r.modelo}</td>
+          <td>${r.tamanho}</td>
+          <td>${r.codigo}</td>
+          <td>${r.motivo}</td>
+          <td><button onclick="excluirRegistro(${i})" class="deleteBtn">Excluir</button></td>
+        `;
+        tabelaRegistros.appendChild(tr);
       });
     }
+
+    document.getElementById("epiForm").addEventListener("submit",async e=>{
+      e.preventDefault();
+      const cs=document.getElementById("cs").value.trim();
+      const tipoEpi=tipoEpiSelect.value;
+      const valor=codigoEpiSelect.value;
+      if(!cs||!tipoEpi||!valor)return alert("Preencha todos os campos!");
+      const [modelo,tamanho]=valor.split("|");
+      const codigo=epiData[tipoEpi][modelo][tamanho];
+      const motivo=document.getElementById("motivo").value.trim();
+      await salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo);
+      e.target.reset();codigoEpiSelect.disabled=true;codigoSelecionadoDiv.textContent="";
+    });
 
     searchCS.addEventListener("input",atualizarListaRegistros);
     window.excluirRegistro=excluirRegistro;
