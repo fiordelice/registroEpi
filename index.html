@@ -495,6 +495,36 @@
 
     searchCS.addEventListener("input", atualizarListaRegistros);
     atualizarListaRegistros();
+
+    <script type="module">
+  import { collection, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  import { db } from "./firebaseConfig.js"; // ou use window.db se você tiver definido assim no código
+
+  async function carregarRegistrosDaNuvem() {
+    try {
+      const querySnapshot = await getDocs(collection(window.db, "registrosEPI"));
+      const registros = [];
+      querySnapshot.forEach((doc) => {
+        registros.push(doc.data());
+      });
+      console.log("📦 Registros carregados da nuvem:", registros);
+      
+      // Junta os registros locais + da nuvem
+      const locais = JSON.parse(localStorage.getItem("registrosEPI")) || [];
+      const todos = [...locais, ...registros];
+      localStorage.setItem("registrosEPI", JSON.stringify(todos));
+      atualizarListaRegistros();
+    } catch (e) {
+      console.error("Erro ao buscar registros da nuvem:", e);
+    }
+  }
+
+  // Carrega automaticamente ao abrir a página
+  carregarRegistrosDaNuvem();
+</script>
+
   </script>
 </body>
 </html>
+
