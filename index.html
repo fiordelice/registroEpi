@@ -214,8 +214,22 @@
         <button class='deleteBtn' data-index='${i}'>Excluir</button>`;
         listaRegistros.appendChild(card);
       });
+         document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.getAttribute("data-index"));
+          excluirRegistro(idx);
+        };
+      });
       atualizarResumoSemanal(filtrados);
     }
+
+    function excluirRegistro(i) {
+      const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
+      registros.splice(i, 1);
+      localStorage.setItem("registrosEPI", JSON.stringify(registros));
+      atualizarListaRegistros();
+    }
+ 
 
     function atualizarResumoSemanal(regs){
       const resumo={};
@@ -242,4 +256,5 @@
   </script>
 </body>
 </html>
+
 
