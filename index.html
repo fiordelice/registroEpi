@@ -7,7 +7,6 @@
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
     body{background:#f4f7f6;color:#333;min-height:100vh;padding:20px;}
     header{background:linear-gradient(90deg,#2e7d32,#388e3c);color:white;padding:20px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.2);margin-bottom:30px;}
-    header h1{font-size:2em;}
     form{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.1);max-width:600px;margin:0 auto 40px auto;}
     label{display:block;margin-top:15px;font-weight:bold;color:#2e7d32;}
     select,input[type="text"]{width:100%;padding:12px;margin-top:5px;border:1px solid #ccc;border-radius:8px;transition:all 0.3s;}
@@ -20,7 +19,7 @@
     .card:hover{transform:translateY(-5px);box-shadow:0 8px 20px rgba(0,0,0,0.15);}
     .card p{margin-bottom:8px;}
     .card .label{font-weight:bold;color:#388e3c;}
-    .deleteBtn{background:#e53935;color:white;border:none;padding:6px;border-radius:5px;cursor:pointer;position:absolute;width:50px;right:10px;bottom:15px;font-size:14px;transition:background 0.3s;}
+    .deleteBtn{background:#e53935;color:white;border:none;padding:6px;border-radius:5px;cursor:pointer;position:absolute;width:60px;right:10px;bottom:15px;font-size:14px;transition:background 0.3s;}
     .deleteBtn:hover{background:#b12b24;}
     h2{text-align:center;color:#2e7d32;margin-bottom:15px;}
     #searchCS{max-width:600px;margin:0 auto 30px auto;padding:12px;border-radius:8px;border:1px solid #ccc;display:block;}
@@ -68,16 +67,10 @@
 
   <div class="registros" id="listaRegistros"></div>
 
-  <h2>Resumo Semanal</h2>
-  <table id="tabelaSemanal">
-    <thead><tr><th>Tipo de EPI</th><th>Quantidade nesta semana</th></tr></thead>
-    <tbody></tbody>
-  </table>
-
-  <!-- 🔥 Firebase -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCA2BCko4ya3Hdb36r6c0JU5kHega-6wok",
@@ -93,23 +86,25 @@
     const db = getFirestore(app);
     window.db = db;
 
-    // 📥 Função para carregar registros da nuvem ao abrir
+    // 🔁 Carregar registros da nuvem ao abrir
     async function carregarDaNuvem() {
       const snapshot = await getDocs(collection(db, "registrosEPI"));
       const registros = [];
-      snapshot.forEach(doc => registros.push(doc.data()));
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        data.id = docSnap.id;
+        registros.push(data);
+      });
       localStorage.setItem("registrosEPI", JSON.stringify(registros));
       atualizarListaRegistros();
     }
     window.carregarDaNuvem = carregarDaNuvem;
-    carregarDaNuvem(); // chama ao abrir a página
-  </script>
+    carregarDaNuvem();
 
-  <!-- 🔧 Lógica local + integração -->
-  <script>
+    // 🔧 Dados EPIs
     const epiData = {
-      capacete: { "Suspensão Carneira com Jugular": { M: "6057580", G: "6014089" } },
-      oculos: { "Óculos Incolor": { Único: "6016960" }, "Óculos Cinza": { Único: "6016961" }, "Óculos Ampla Visão": { Único: "6008482" } },
+      capacete: { "Suspensão Carneira com Jugular": { M:"6057580", G:"6014089" } },
+      oculos: { "Óculos Incolor": { Único:"6016960" }, "Óculos Cinza": { Único:"6016961" }, "Óculos Ampla Visão": { Único:"6008482" } },
       botina: {
         "Bota PVC sem Bico de Aço": { 35:"6002760",36:"6002732",37:"6002733",38:"6002734",39:"6002735",40:"6002736",41:"6002737",42:"6002738",43:"6002739",44:"6002740",45:"6018105"},
         "Bota Vaqueta com Composite": {36:"6050775",37:"6050761",38:"6050760",39:"6050734",40:"6050768",41:"6050744",42:"6050759",43:"6050733",44:"6050743",45:"6050732",46:"6050767",47:"6049174"},
@@ -129,40 +124,38 @@
     const codigoEpiSelect=document.getElementById("codigoEpi");
     const codigoSelecionadoDiv=document.getElementById("codigoSelecionado");
     const listaRegistros=document.getElementById("listaRegistros");
-    const searchCS=document.getElementById("searchCS");
-    const tabelaSemanalBody=document.querySelector("#tabelaSemanal tbody");
     const form=document.getElementById("epiForm");
+    const searchCS=document.getElementById("searchCS");
 
     tipoEpiSelect.addEventListener("change",()=>{
-      codigoEpiSelect.innerHTML="";codigoSelecionadoDiv.textContent="";
+      codigoEpiSelect.innerHTML="";
+      codigoSelecionadoDiv.textContent="";
       const tipo=tipoEpiSelect.value;
       if(tipo&&epiData[tipo]){
         codigoEpiSelect.disabled=false;
-        codigoEpiSelect.innerHTML='<option value="">Selecione o modelo/tamanho...</option>';
+        codigoEpiSelect.innerHTML='<option value="">Selecione...</option>';
         for(const modelo in epiData[tipo]){
           const optGroup=document.createElement("optgroup");
           optGroup.label=modelo;
-          for(const tamanho in epiData[tipo][modelo]){
+          for(const tam in epiData[tipo][modelo]){
             const opt=document.createElement("option");
-            opt.value=`${modelo}|${tamanho}`;
-            opt.textContent=`${modelo} - ${tamanho}`;
+            opt.value=`${modelo}|${tam}`;
+            opt.textContent=`${modelo} - ${tam}`;
             optGroup.appendChild(opt);
           }
           codigoEpiSelect.appendChild(optGroup);
         }
       } else {
         codigoEpiSelect.disabled=true;
-        codigoEpiSelect.innerHTML='<option value="">Selecione o tipo de EPI primeiro...</option>';
+        codigoEpiSelect.innerHTML='<option value="">Selecione o tipo primeiro...</option>';
       }
     });
 
     codigoEpiSelect.addEventListener("change",()=>{
       const tipo=tipoEpiSelect.value;
       const [modelo,tamanho]=codigoEpiSelect.value.split("|");
-      if(modelo&&tamanho&&epiData[tipo][modelo][tamanho]){
-        const codigo=epiData[tipo][modelo][tamanho];
-        codigoSelecionadoDiv.textContent=`Código SAP: ${codigo}`;
-      } else {codigoSelecionadoDiv.textContent="";}
+      const codigo=epiData[tipo]?.[modelo]?.[tamanho]||"";
+      codigoSelecionadoDiv.textContent=codigo?`Código SAP: ${codigo}`:"";
     });
 
     async function salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo){
@@ -172,12 +165,9 @@
       localStorage.setItem("registrosEPI",JSON.stringify(registros));
       atualizarListaRegistros();
 
-      // salva na nuvem também
-      try{
-        const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
-        await addDoc(collection(window.db,"registrosEPI"),novo);
-        console.log("✅ Registro salvo no Firestore");
-      }catch(e){console.error("❌ Erro ao salvar na nuvem",e);}
+      // salvar no Firestore
+      const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
+      await addDoc(collection(window.db,"registrosEPI"),novo);
     }
 
     form.addEventListener("submit",e=>{
@@ -193,6 +183,23 @@
       form.reset();codigoEpiSelect.disabled=true;codigoSelecionadoDiv.textContent="";
     });
 
+    async function excluirRegistro(index){
+      const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
+      const registro=registros[index];
+      registros.splice(index,1);
+      localStorage.setItem("registrosEPI",JSON.stringify(registros));
+      atualizarListaRegistros();
+
+      // apaga também no Firestore
+      const snapshot = await getDocs(collection(window.db, "registrosEPI"));
+      snapshot.forEach(async (docSnap)=>{
+        const d=docSnap.data();
+        if(d.cs===registro.cs && d.data===registro.data){
+          await deleteDoc(doc(window.db,"registrosEPI",docSnap.id));
+        }
+      });
+    }
+
     function atualizarListaRegistros(){
       const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
       const filtro=searchCS.value.trim().toLowerCase();
@@ -200,43 +207,26 @@
       const filtrados=registros.filter(r=>r.cs.toLowerCase().includes(filtro));
       if(filtrados.length===0){
         listaRegistros.innerHTML="<p style='text-align:center;color:#888;'>Nenhum registro encontrado.</p>";
-        atualizarResumoSemanal([]);return;
+        return;
       }
       filtrados.forEach((r,i)=>{
         const card=document.createElement("div");
         card.className="card";
-        card.innerHTML=`<p><span class='label'>CS:</span> ${r.cs}</p>
-        <p><span class='label'>Tipo:</span> ${r.tipoEpi}</p>
-        <p><span class='label'>Modelo:</span> ${r.modelo}</p>
-        <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
-        <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
-        <p><span class='label'>Motivo:</span> ${r.motivo}</p>`;
+        card.innerHTML=`
+          <p><span class='label'>CS:</span> ${r.cs}</p>
+          <p><span class='label'>Tipo:</span> ${r.tipoEpi}</p>
+          <p><span class='label'>Modelo:</span> ${r.modelo}</p>
+          <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
+          <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
+          <p><span class='label'>Motivo:</span> ${r.motivo}</p>
+          <button class="deleteBtn" onclick="excluirRegistro(${i})">Excluir</button>
+        `;
         listaRegistros.appendChild(card);
       });
-      atualizarResumoSemanal(filtrados);
-    }
-
-    function atualizarResumoSemanal(regs){
-      const resumo={};
-      const hoje=new Date();
-      regs.forEach(r=>{
-        const data=new Date(r.data);
-        const diff=(hoje-data)/(1000*60*60*24);
-        if(diff<=7)resumo[r.tipoEpi]=(resumo[r.tipoEpi]||0)+1;
-      });
-      tabelaSemanalBody.innerHTML="";
-      if(Object.keys(resumo).length===0){
-        tabelaSemanalBody.innerHTML="<tr><td colspan='2'>Nenhum registro nos últimos 7 dias</td></tr>";
-        return;
-      }
-      for(const tipo in resumo){
-        const tr=document.createElement("tr");
-        tr.innerHTML=`<td>${tipo}</td><td>${resumo[tipo]}</td>`;
-        tabelaSemanalBody.appendChild(tr);
-      }
     }
 
     searchCS.addEventListener("input",atualizarListaRegistros);
+    window.excluirRegistro=excluirRegistro;
     atualizarListaRegistros();
   </script>
 </body>
