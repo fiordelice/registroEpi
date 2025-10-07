@@ -93,10 +93,15 @@
     const db = getFirestore(app);
     window.db = db;
 
+    // Ao carregar, garante que cada doc carregado tenha um id no objeto local
     async function carregarDaNuvem() {
       const snapshot = await getDocs(collection(db, "registrosEPI"));
       const registros = [];
-      snapshot.forEach(doc => registros.push(doc.data()));
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (!data.id) data.id = doc.id || String(Date.now()) + "-" + Math.random();
+        registros.push(data);
+      });
       localStorage.setItem("registrosEPI", JSON.stringify(registros));
       atualizarListaRegistros();
     }
@@ -166,11 +171,12 @@
 
     async function salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo){
       const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
-      const novo={id:Date.now(),cs,tipoEpi,modelo,tamanho,codigo,motivo,data:new Date().toISOString()}; <!-- 🔥 adicionado id único -->
+      const novo={ id: String(Date.now()), cs, tipoEpi, modelo, tamanho, codigo, motivo, data:new Date().toISOString() };
       registros.push(novo);
       localStorage.setItem("registrosEPI",JSON.stringify(registros));
       atualizarListaRegistros();
 
+      // tenta também salvar na nuvem
       try{
         const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
         await addDoc(collection(window.db,"registrosEPI"),novo);
@@ -192,7 +198,17 @@
     });
 
     function atualizarListaRegistros(){
-      const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
+      const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
+      // garante que todos os registros locais tenham id (gera se faltar)
+      let changed = false;
+      for(let i=0;i<registros.length;i++){
+        if(!registros[i].id){
+          registros[i].id = String(Date.now()) + "-" + i;
+          changed = true;
+        }
+      }
+      if(changed) localStorage.setItem("registrosEPI", JSON.stringify(registros));
+
       const filtro=searchCS.value.trim().toLowerCase();
       listaRegistros.innerHTML="";
       const filtrados=registros.filter(r=>r.cs.toLowerCase().includes(filtro));
@@ -209,13 +225,13 @@
         <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
         <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
         <p><span class='label'>Motivo:</span> ${r.motivo}</p>
-        <button class='deleteBtn' data-id='${r.id}'>Excluir</button>`; <!-- 🔥 botão com id -->
+        <button class='deleteBtn' data-id='${r.id}'>Excluir</button>`;
         listaRegistros.appendChild(card);
       });
 
       document.querySelectorAll(".deleteBtn").forEach(btn=>{
         btn.onclick=()=>{
-          const id=parseInt(btn.getAttribute("data-id"));
+          const id = btn.getAttribute("data-id"); // mantém como string
           excluirRegistro(id);
         };
       });
@@ -223,10 +239,29 @@
       atualizarResumoSemanal(filtrados);
     }
 
-    function excluirRegistro(id){ <!-- 🔥 exclusão por id -->
-      const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
-      const novos=registros.filter(r=>r.id!==id);
-      localStorage.setItem("registrosEPI",JSON.stringify(novos));
+    async function excluirRegistro(id){
+      // remove do localStorage
+      const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
+      const novos = registros.filter(r=>String(r.id)!==String(id));
+      localStorage.setItem("registrosEPI", JSON.stringify(novos));
+
+      // tenta também remover do Firestore (procura por campo id ou por doc.id)
+      try{
+        const { getDocs, collection, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
+        const snapshot = await getDocs(collection(window.db,"registrosEPI"));
+        const promises = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if(String(data.id)===String(id) || doc.id===String(id)){
+            promises.push(deleteDoc(doc.ref));
+          }
+        });
+        if(promises.length) await Promise.all(promises);
+        console.log("✅ Tentativa de exclusão na nuvem concluída");
+      }catch(e){
+        console.error("❌ Erro ao excluir na nuvem", e);
+      }
+
       atualizarListaRegistros();
     }
 
