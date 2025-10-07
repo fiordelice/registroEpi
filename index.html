@@ -4,32 +4,56 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Controle de EPI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    label { font-weight: bold; }
+    select, input {
+      margin: 5px 0;
+      padding: 5px;
+      width: 250px;
+    }
+    button {
+      padding: 8px 15px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: #f2f2f2;
+      margin-bottom: 5px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
   <h1>Controle de EPI</h1>
 
-  <label for="cs">CS:</label>
-  <input type="text" id="cs" placeholder="Digite o CS"><br><br>
+  <label for="cs">CS:</label><br>
+  <input type="text" id="cs" placeholder="Digite o CS"><br>
 
-  <label for="tipoEpi">Tipo de EPI:</label>
+  <label for="tipoEpi">Tipo de EPI:</label><br>
   <select id="tipoEpi" onchange="atualizarModelos()">
     <option value="">Selecione</option>
-  </select><br><br>
+  </select><br>
 
-  <label for="modeloEpi">Modelo:</label>
+  <label for="modeloEpi">Modelo:</label><br>
   <select id="modeloEpi" onchange="atualizarTamanhos()">
     <option value="">Selecione</option>
-  </select><br><br>
+  </select><br>
 
-  <label for="tamanhoEpi">Tamanho:</label>
+  <label for="tamanhoEpi">Tamanho:</label><br>
   <select id="tamanhoEpi" onchange="mostrarCodigo()">
     <option value="">Selecione</option>
-  </select><br><br>
+  </select><br>
 
   <p><strong>Código:</strong> <span id="codigoEpi"></span></p>
 
-  <label for="motivo">Motivo:</label>
-  <input type="text" id="motivo" placeholder="Ex: Troca, Novo, etc"><br><br>
+  <label for="motivo">Motivo:</label><br>
+  <input type="text" id="motivo" placeholder="Ex: Troca, Novo, etc"><br>
 
   <button onclick="registrarEntrega()">Registrar</button>
 
@@ -37,10 +61,11 @@
   <ul id="listaRegistros"></ul>
 
   <script type="module">
-    // 🔥 Configuração Firebase
+    // 🔥 Import Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+    // ⚙️ Configuração do Firebase (substitua pelos seus dados)
     const firebaseConfig = {
       apiKey: "SUA_API_KEY_AQUI",
       authDomain: "SEU_PROJETO.firebaseapp.com",
@@ -50,17 +75,15 @@
       appId: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     };
 
+    // 🔧 Inicialização
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     window.db = db;
 
-    // 🔹 Dados dos EPIs
+    // 📦 Dados dos EPIs
     const epiData = {
       capacete: {
-        "Suspensão Carneira com Jugular": {
-          M: "6057580",
-          G: "6014089"
-        }
+        "Suspensão Carneira com Jugular": { M: "6057580", G: "6014089" }
       },
       oculos: {
         "Óculos Incolor": { Único: "6016960" },
@@ -69,99 +92,39 @@
       },
       botina: {
         "Bota PVC sem Bico de Aço": {
-          35: "6002760",
-          36: "6002732",
-          37: "6002733",
-          38: "6002734",
-          39: "6002735",
-          40: "6002736",
-          41: "6002737",
-          42: "6002738",
-          43: "6002739",
-          44: "6002740",
-          45: "6018105"
+          35: "6002760", 36: "6002732", 37: "6002733", 38: "6002734",
+          39: "6002735", 40: "6002736", 41: "6002737", 42: "6002738",
+          43: "6002739", 44: "6002740", 45: "6018105"
         },
         "Bota Vaqueta com Composite": {
-          36: "6050775",
-          37: "6050761",
-          38: "6050760",
-          39: "6050734",
-          40: "6050768",
-          41: "6050744",
-          42: "6050759",
-          43: "6050733",
-          44: "6050743",
-          45: "6050732",
-          46: "6050767",
-          47: "6049174"
+          36: "6050775", 37: "6050761", 38: "6050760", 39: "6050734",
+          40: "6050768", 41: "6050744", 42: "6050759", 43: "6050733",
+          44: "6050743", 45: "6050732", 46: "6050767", 47: "6049174"
         },
         "Botina de Amarrar Antitorção": {
-          34: "6054631",
-          35: "6054630",
-          36: "6054664",
-          37: "6054622",
-          38: "6054663",
-          39: "6054672",
-          40: "6054621",
-          41: "6054683",
-          42: "6054682",
-          43: "6054681",
-          44: "6054662",
-          45: "6054661",
-          46: "6054680",
-          47: "6054671"
+          34: "6054631", 35: "6054630", 36: "6054664", 37: "6054622",
+          38: "6054663", 39: "6054672", 40: "6054621", 41: "6054683",
+          42: "6054682", 43: "6054681", 44: "6054662", 45: "6054661",
+          46: "6054680", 47: "6054671"
         }
       },
       colete: {
-        "Colete Verde Limão": {
-          M: "6027671",
-          G: "6027672",
-          GG: "6039623",
-          XGG: "6057591"
-        }
+        "Colete Verde Limão": { M: "6027671", G: "6027672", GG: "6039623", XGG: "6057591" }
       },
       protetorAuricular: {
-        "Plug Silicone 3 Tamanhos": {
-          P: "6016022",
-          M: "6044293",
-          G: "6057569"
-        }
+        "Plug Silicone 3 Tamanhos": { P: "6016022", M: "6044293", G: "6057569" }
       },
       luvas: {
-        "Luva Resistência Mecânica": {
-          8: "6043567",
-          9: "6043568",
-          10: "6047676",
-          11: "6052203"
-        }
+        "Luva Resistência Mecânica": { 8: "6043567", 9: "6043568", 10: "6047676", 11: "6052203" }
       },
       uniforme: {
-        "Camisa Manga Curta": {
-          PP: "6040852",
-          P: "6040886",
-          M: "6040925",
-          G: "6040926",
-          GG: "6040927",
-          XG: "6040928"
-        },
-        "Camisa Manga Longa": {
-          PP: "6038450",
-          P: "6040931",
-          M: "6040932",
-          G: "6040933",
-          GG: "6040866"
-        },
-        "Calça Cinza": {
-          PP: "6040870",
-          P: "6040872",
-          M: "6040873",
-          G: "6040895",
-          GG: "6040897"
-        }
+        "Camisa Manga Curta": { PP: "6040852", P: "6040886", M: "6040925", G: "6040926", GG: "6040927", XG: "6040928" },
+        "Camisa Manga Longa": { PP: "6038450", P: "6040931", M: "6040932", G: "6040933", GG: "6040866" },
+        "Calça Cinza": { PP: "6040870", P: "6040872", M: "6040873", G: "6040895", GG: "6040897" }
       }
     };
 
-    // 🔹 Preencher tipos de EPI
+    // 🧠 Popula tipos
     const tipoEpi = document.getElementById("tipoEpi");
     Object.keys(epiData).forEach(tipo => {
       const opt = document.createElement("option");
@@ -170,7 +133,7 @@
       tipoEpi.appendChild(opt);
     });
 
-    // 🔹 Atualiza modelos e tamanhos
+    // 🔁 Atualiza modelos
     window.atualizarModelos = function() {
       const tipo = tipoEpi.value;
       const modeloSelect = document.getElementById("modeloEpi");
@@ -188,6 +151,7 @@
       }
     };
 
+    // 🔁 Atualiza tamanhos
     window.atualizarTamanhos = function() {
       const tipo = tipoEpi.value;
       const modelo = document.getElementById("modeloEpi").value;
@@ -205,6 +169,7 @@
       }
     };
 
+    // 🧾 Mostra código
     window.mostrarCodigo = function() {
       const tipo = tipoEpi.value;
       const modelo = document.getElementById("modeloEpi").value;
@@ -213,7 +178,7 @@
       document.getElementById("codigoEpi").textContent = codigo;
     };
 
-    // 🔹 Registrar entrega
+    // 💾 Registrar entrega
     window.registrarEntrega = async function() {
       const cs = document.getElementById("cs").value.trim();
       const tipo = tipoEpi.value;
@@ -229,23 +194,24 @@
 
       const novoRegistro = { cs, tipo, modelo, tamanho, codigo, motivo, data: new Date().toISOString() };
 
-      // 🔸 Salva localmente
+      // Local
       const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
       registros.push(novoRegistro);
       localStorage.setItem("registrosEPI", JSON.stringify(registros));
 
-      // 🔸 Salva na nuvem
+      // Firestore
       try {
         await addDoc(collection(db, "registrosEPI"), novoRegistro);
-        console.log("✅ Salvo na nuvem");
+        console.log("✅ Salvo no Firestore");
       } catch (err) {
-        console.error("❌ Erro ao salvar no Firestore:", err);
+        console.error("❌ Erro ao salvar na nuvem:", err);
       }
 
       atualizarListaRegistros();
+      alert("✅ Registro salvo com sucesso!");
     };
 
-    // 🔹 Atualiza lista
+    // 📋 Atualiza lista
     window.atualizarListaRegistros = function() {
       const lista = document.getElementById("listaRegistros");
       lista.innerHTML = "";
@@ -258,7 +224,7 @@
       });
     };
 
-    // 🔹 Carrega registros do Firestore
+    // ☁️ Carrega registros da nuvem
     async function carregarRegistrosNuvem() {
       const querySnapshot = await getDocs(collection(db, "registrosEPI"));
       const registros = [];
