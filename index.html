@@ -93,7 +93,6 @@
     const db = getFirestore(app);
     window.db = db;
 
-    // 📥 Função para carregar registros da nuvem ao abrir
     async function carregarDaNuvem() {
       const snapshot = await getDocs(collection(db, "registrosEPI"));
       const registros = [];
@@ -102,7 +101,7 @@
       atualizarListaRegistros();
     }
     window.carregarDaNuvem = carregarDaNuvem;
-    carregarDaNuvem(); // chama ao abrir a página
+    carregarDaNuvem();
   </script>
 
   <!-- 🔧 Lógica local + integração -->
@@ -167,12 +166,11 @@
 
     async function salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo){
       const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
-      const novo={cs,tipoEpi,modelo,tamanho,codigo,motivo,data:new Date().toISOString()};
+      const novo={id:Date.now(),cs,tipoEpi,modelo,tamanho,codigo,motivo,data:new Date().toISOString()}; <!-- 🔥 adicionado id único -->
       registros.push(novo);
       localStorage.setItem("registrosEPI",JSON.stringify(registros));
       atualizarListaRegistros();
 
-      // salva na nuvem também
       try{
         const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
         await addDoc(collection(window.db,"registrosEPI"),novo);
@@ -202,7 +200,7 @@
         listaRegistros.innerHTML="<p style='text-align:center;color:#888;'>Nenhum registro encontrado.</p>";
         atualizarResumoSemanal([]);return;
       }
-      filtrados.forEach((r,i)=>{
+      filtrados.forEach((r)=>{
         const card=document.createElement("div");
         card.className="card";
         card.innerHTML=`<p><span class='label'>CS:</span> ${r.cs}</p>
@@ -211,25 +209,26 @@
         <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
         <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
         <p><span class='label'>Motivo:</span> ${r.motivo}</p>
-        <button class='deleteBtn' data-index='${i}'>Excluir</button>`;
+        <button class='deleteBtn' data-id='${r.id}'>Excluir</button>`; <!-- 🔥 botão com id -->
         listaRegistros.appendChild(card);
       });
-         document.querySelectorAll(".deleteBtn").forEach(btn => {
-        btn.onclick = () => {
-          const idx = parseInt(btn.getAttribute("data-index"));
-          excluirRegistro(idx);
+
+      document.querySelectorAll(".deleteBtn").forEach(btn=>{
+        btn.onclick=()=>{
+          const id=parseInt(btn.getAttribute("data-id"));
+          excluirRegistro(id);
         };
       });
+
       atualizarResumoSemanal(filtrados);
     }
 
-    function excluirRegistro(i) {
-      const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
-      registros.splice(i, 1);
-      localStorage.setItem("registrosEPI", JSON.stringify(registros));
+    function excluirRegistro(id){ <!-- 🔥 exclusão por id -->
+      const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
+      const novos=registros.filter(r=>r.id!==id);
+      localStorage.setItem("registrosEPI",JSON.stringify(novos));
       atualizarListaRegistros();
     }
- 
 
     function atualizarResumoSemanal(regs){
       const resumo={};
@@ -256,5 +255,3 @@
   </script>
 </body>
 </html>
-
-
