@@ -3,7 +3,401 @@
 <head>
   <meta charset="UTF-8" />
   <title>Registro de EPI - Raízen Mundial</title>
+  <style><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registro de EPI - Raízen Mundial</title>
   <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
+    body{background:#f4f7f6;color:#333;min-height:100vh;padding:20px;}
+    header{background:linear-gradient(90deg,#2e7d32,#388e3c);color:white;padding:20px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.2);margin-bottom:30px;}
+    header h1{font-size:2em;}
+    form{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.1);max-width:600px;margin:0 auto 40px auto;}
+    label{display:block;margin-top:15px;font-weight:bold;color:#2e7d32;}
+    select,input[type="text"]{width:100%;padding:12px;margin-top:5px;border:1px solid #ccc;border-radius:8px;transition:all 0.3s;}
+    select:focus,input[type="text"]:focus{border-color:#388e3c;outline:none;box-shadow:0 0 5px rgba(56,142,60,0.5);}
+    button{margin-top:20px;width:100%;padding:14px;background:#388e3c;color:white;border:none;border-radius:10px;font-size:18px;cursor:pointer;transition:all 0.3s;}
+    button:hover{background:#2e7d32;}
+    #codigoSelecionado{margin-top:12px;font-weight:700;font-size:20px;color:#2e7d32;text-align:center;min-height:28px;}
+    .registros{max-width:950px;margin:0 auto 40px auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+    .card{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);position:relative;transition:transform 0.2s,box-shadow 0.2s;}
+    .card:hover{transform:translateY(-5px);box-shadow:0 8px 20px rgba(0,0,0,0.15);}
+    .card p{margin-bottom:8px;}
+    .card .label{font-weight:bold;color:#388e3c;}
+    .deleteBtn{background:#e53935;color:white;border:none;padding:6px;border-radius:5px;cursor:pointer;position:absolute;width:50px;right:10px;bottom:15px;font-size:14px;transition:background 0.3s;}
+    .deleteBtn:hover{background:#b12b24;}
+    h2{text-align:center;color:#2e7d32;margin-bottom:15px;}
+    #searchCS{max-width:600px;margin:0 auto 30px auto;padding:12px;border-radius:8px;border:1px solid #ccc;display:block;}
+    table{width:90%;max-width:600px;margin:0 auto 40px auto;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    th,td{border:1px solid #ddd;padding:12px;text-align:center;}
+    th{background:#2e7d32;color:white;}
+    tr:nth-child(even){background:#f9f9f9;}
+    @media(max-width:650px){.registros{grid-template-columns:1fr;}form,#searchCS,table{width:95%;}}
+  </style>
+</head>
+<body>
+  <header><h1>Registro de EPI - Raízen Mundial</h1></header>
+
+  <form id="epiForm">
+    <label for="cs">CS da Pessoa:</label>
+    <input type="text" id="cs" placeholder="Digite o CS" required />
+    <div id="infoPessoa" style="margin-top:10px;color:#2e7d32;font-weight:bold;"></div>
+    <div id="historicoPessoa" style="margin-top:10px;font-size:14px;color:#333;"></div>
+
+    <label for="tipoEpi">Tipo de EPI:</label>
+    <select id="tipoEpi" required>
+      <option value="">Selecione...</option>
+      <option value="capacete">Capacete</option>
+      <option value="oculos">Óculos</option>
+      <option value="botina">Botina</option>
+      <option value="colete">Colete</option>
+      <option value="protetorAuricular">Protetor Auricular</option>
+      <option value="luvas">Luvas</option>
+      <option value="uniforme">Uniforme</option>
+    </select>
+
+    <label for="codigoEpi">Tamanho:</label>
+    <select id="codigoEpi" required disabled>
+      <option value="">Selecione o tipo de EPI primeiro</option>
+    </select>
+
+    <div id="codigoSelecionado"></div>
+
+    <label for="motivo">Motivo:</label>
+    <input type="text" id="motivo" placeholder="Digite o motivo do uso" required />
+
+    <button type="submit">Registrar</button>
+  </form>
+
+  <h2>Pesquisar por CS</h2>
+  <input type="text" id="searchCS" placeholder="Digite o CS da pessoa" />
+
+  <div class="registros" id="listaRegistros"></div>
+
+  <h2>Resumo Semanal</h2>
+  <table id="tabelaSemanal">
+    <thead><tr><th>Tipo de EPI</th><th>Quantidade nesta semana</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- 🔥 Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCA2BCko4ya3Hdb36r6c0JU5kHega-6wok",
+      authDomain: "registrarepi-c4639.firebaseapp.com",
+      projectId: "registrarepi-c4639",
+      storageBucket: "registrarepi-c4639.firebasestorage.app",
+      messagingSenderId: "244480830849",
+      appId: "1:244480830849:web:460612bad8903a67a50c80",
+      measurementId: "G-DG0SDYYCLF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db;
+
+    async function carregarDaNuvem() {
+      const snapshot = await getDocs(collection(db, "registrosEPI"));
+      const registros = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (!data.id) data.id = doc.id || String(Date.now()) + "-" + Math.random();
+        registros.push(data);
+      });
+      localStorage.setItem("registrosEPI", JSON.stringify(registros));
+      atualizarListaRegistros();
+    }
+    window.carregarDaNuvem = carregarDaNuvem;
+    carregarDaNuvem();
+  </script>
+
+  <!-- 🔧 Lógica local + integração -->
+  <script>
+    const epiData = {
+      capacete: { "Suspensão Carneira com Jugular": { M: "6057580", G: "6014089" } },
+      oculos: { "Óculos Incolor": { Único: "6016960" }, "Óculos Cinza": { Único: "6016961" }, "Óculos Ampla Visão": { Único: "6008482" } },
+      botina: {
+        "Bota PVC sem Bico de Aço": { 35:"6002760",36:"6002732",37:"6002733",38:"6002734",39:"6002735",40:"6002736",41:"6002737",42:"6002738",43:"6002739",44:"6002740",45:"6018105"},
+        "Bota Vaqueta com Composite": {36:"6050775",37:"6050761",38:"6050760",39:"6050734",40:"6050768",41:"6050744",42:"6050759",43:"6050733",44:"6050743",45:"6050732",46:"6050767",47:"6049174"},
+        "Botina de Amarrar Antitorção": {34:"6054631",35:"6054630",36:"6054664",37:"6054622",38:"6054663",39:"6054672",40:"6054621",41:"6054683",42:"6054682",43:"6054681",44:"6054662",45:"6054661",46:"6054680",47:"6054671"}
+      },
+      colete: { "Colete Verde Limão": { M:"6027671",G:"6027672",GG:"6039623",XGG:"6057591"} },
+      protetorAuricular: { "Plug Silicone 3 Tamanhos": { P:"6016022",M:"6044293",G:"6057569"} },
+      luvas: { "Luva Resistência Mecânica": { 8:"6043567",9:"6043568",10:"6047676",11:"6052203"} },
+      uniforme: {
+        "Camisa Manga Curta": { PP:"6040852",P:"6040886",M:"6040925",G:"6040926",GG:"6040927",XG:"6040928" },
+        "Camisa Manga Longa": { PP:"6038450",P:"6040931",M:"6040932",G:"6040933",GG:"6040866" },
+        "Calça Cinza": { PP:"6040870",P:"6040872",M:"6040873",G:"6040895",GG:"6040897" }
+      }
+    };
+
+    // ------------------------------
+    // dicionário global de colaboradores (nome + cargo)
+    // ------------------------------
+    const colaboradores = {
+      "366639": { nome: "Guilherme Araújo Morais Bernardino de Souza", cargo: "Sup Produção Industrial" },
+      "37995": { nome: "Lincon Kiotada Tsubone Yoshimoto", cargo: "Especialista Produção Ind" },
+      "126531": { nome: "Pedro Rogerio Bertuzo", cargo: "Gestor Produção Ind" },
+      "325992": { nome: "Rodrigo da Rosa Menezes", cargo: "Operador Produção Açúcar II" },
+      "425854": { nome: "Gabriel Aparecido Toledo da Fonte", cargo: "Operador Produção Açúcar I" },
+      "427920": { nome: "Kauan Garcia Vieira", cargo: "Operador Produção Açúcar I" },
+      "429558": { nome: "Mateus Henrique Ferreira Martins", cargo: "Operador Produção Açúcar I" },
+      "251504": { nome: "Gabriel Gustavo Datrino", cargo: "Operador Produção Etanol III" },
+      "293059": { nome: "João Felipe Alves Soares de Oliveira", cargo: "Gestor Produção Ind" },
+      "427633": { nome: "Roberto Adriano da Silva", cargo: "Operador Produção Etanol I" },
+      "429276": { nome: "Janaína Rosa Alves", cargo: "Gestor Formação" },
+      "417756": { nome: "Adriano Batista de Souza", cargo: "Operador Produção Açúcar I" },
+      "436236": { nome: "Ivan Claudio Monteiro Izidorio", cargo: "Operador Limpeza Operativa" },
+      "436238": { nome: "Cleison Dutra Maia Dos Santos", cargo: "Operador Limpeza Operativa" },
+      "436704": { nome: "Erick Renan da Silva Nunes", cargo: "Operador Limpeza Operativa" },
+      "437571": { nome: "Matheus Dos Santos Nogara Martins", cargo: "Operador Limpeza Operativa" },
+      "444242": { nome: "Fernando Gabriel Boscolo", cargo: "Operador Limpeza Operativa" },
+      "296807": { nome: "Vagner Roberto Piva Alves", cargo: "Operador Produção Açúcar III" },
+      "414557": { nome: "Daniel Carlos de Mello", cargo: "Operador Produção Açúcar II" },
+      "427819": { nome: "Gabriel Mendonça da Cunha", cargo: "Operador Produção Açúcar I" },
+      "438077": { nome: "Miguel Rodrigo de Azevedo Martins", cargo: "Operador Produção Açúcar I" },
+      "341001": { nome: "Edenilson Nascimento Santos", cargo: "Operador Limpeza Operativa" },
+      "232877": { nome: "Antonio Alves Feitosa", cargo: "Operador Produção Açúcar II" },
+      "289664": { nome: "Aleandro da Silva Assis", cargo: "Gestor Produção Ind" },
+      "311452": { nome: "Luis Felipe Rodrigues dos Santos", cargo: "Operador Produção Açúcar II" },
+      "371139": { nome: "Keli Daiane da Rocha de Sa", cargo: "Operador Produção Açúcar III" },
+      "378224": { nome: "Mateus Felipe da Silveira Tapia", cargo: "Operador Produção Açúcar II" },
+      "38098": { nome: "José Carlos Andreotti", cargo: "Operador Produção Açúcar III" },
+      "217521": { nome: "Ronie de Deus Pinheiro", cargo: "Operador Produção Açúcar III" },
+      "395226": { nome: "Felipe Prado Maziero", cargo: "Operador Produção Açúcar II" },
+      "53558": { nome: "Alberto Ferreira Lino", cargo: "Operador Produção Açúcar III" },
+      "74073": { nome: "Claudio Benvindo de Souza", cargo: "Operador Produção Açúcar III" },
+      "289696": { nome: "Rodrigo Marcilio", cargo: "Operador Produção Açúcar II" },
+      "339723": { nome: "Diogo Henrique Santos", cargo: "Operador Produção Açúcar II" },
+      "251628": { nome: "Weliton Rodrigo dos Santos Morais", cargo: "Operador Produção Etanol III" },
+      "407967": { nome: "Deyvison Yuri Santos", cargo: "Operador Produção Etanol I" },
+      "38780": { nome: "Paulo Roberto de Lima", cargo: "Operador Produção Etanol II" },
+      "38920": { nome: "Arnaldo de Souza Sardeiro", cargo: "Operador Produção Etanol II" },
+      "74040": { nome: "Ednilson dos Santos", cargo: "Operador Produção Etanol II" },
+      "341027": { nome: "Jefferson Venancio Alves", cargo: "Operador Produção Etanol" },
+      "38111": { nome: "José da Silva", cargo: "Op Produção Etanol Especializado" },
+      "38130": { nome: "Antonio Marcos Bueno", cargo: "Op Produção Etanol Especializado" },
+      "38157": { nome: "Luiz Carlos Pereira", cargo: "Operador Produção Etanol III" },
+      "126193": { nome: "Wagner Luiz Beneis", cargo: "Operador Produção Etanol II" },
+      "332008": { nome: "Onivaldo Sotana", cargo: "Operador Produção Etanol III" },
+      "430119": { nome: "Daniel Raimundo Ferro", cargo: "Estagiário" },
+      "999999": { nome: "Almir Ferreira de Ataíde", cargo: "Gestor Produção Ind" }
+    };
+
+    const tipoEpiSelect=document.getElementById("tipoEpi");
+    const codigoEpiSelect=document.getElementById("codigoEpi");
+    const codigoSelecionadoDiv=document.getElementById("codigoSelecionado");
+    const listaRegistros=document.getElementById("listaRegistros");
+    const searchCS=document.getElementById("searchCS");
+    const tabelaSemanalBody=document.querySelector("#tabelaSemanal tbody");
+    const form=document.getElementById("epiForm");
+
+    tipoEpiSelect.addEventListener("change",()=>{
+      codigoEpiSelect.innerHTML="";codigoSelecionadoDiv.textContent="";
+      const tipo=tipoEpiSelect.value;
+      if(tipo&&epiData[tipo]){
+        codigoEpiSelect.disabled=false;
+        codigoEpiSelect.innerHTML='<option value="">Selecione o modelo/tamanho...</option>';
+        for(const modelo in epiData[tipo]){
+          const optGroup=document.createElement("optgroup");
+          optGroup.label=modelo;
+          for(const tamanho in epiData[tipo][modelo]){
+            const opt=document.createElement("option");
+            opt.value=`${modelo}|${tamanho}`;
+            opt.textContent=`${modelo} - ${tamanho}`;
+            optGroup.appendChild(opt);
+          }
+          codigoEpiSelect.appendChild(optGroup);
+        }
+      } else {
+        codigoEpiSelect.disabled=true;
+        codigoEpiSelect.innerHTML='<option value="">Selecione o tipo de EPI primeiro...</option>';
+      }
+    });
+
+    codigoEpiSelect.addEventListener("change",()=>{
+      const tipo=tipoEpiSelect.value;
+      const [modelo,tamanho]=codigoEpiSelect.value.split("|");
+      if(modelo&&tamanho&&epiData[tipo][modelo][tamanho]){
+        const codigo=epiData[tipo][modelo][tamanho];
+        codigoSelecionadoDiv.textContent=`Código SAP: ${codigo}`;
+      } else {codigoSelecionadoDiv.textContent="";}
+    });
+
+    async function salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo){
+      const registros=JSON.parse(localStorage.getItem("registrosEPI"))||[];
+      const novo={ id: String(Date.now()), cs, tipoEpi, modelo, tamanho, codigo, motivo, data:new Date().toISOString() };
+      registros.push(novo);
+      localStorage.setItem("registrosEPI",JSON.stringify(registros));
+      atualizarListaRegistros();
+
+      try{
+        const { addDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
+        await addDoc(collection(window.db,"registrosEPI"),novo);
+        console.log("✅ Registro salvo no Firestore");
+      }catch(e){console.error("❌ Erro ao salvar na nuvem",e);}
+    }
+
+    form.addEventListener("submit",e=>{
+      e.preventDefault();
+      const cs=document.getElementById("cs").value.trim();
+      const tipoEpi=tipoEpiSelect.value;
+      const valor=codigoEpiSelect.value;
+      if(!cs||!tipoEpi||!valor)return alert("Preencha todos os campos!");
+      const [modelo,tamanho]=valor.split("|");
+      const codigo=epiData[tipoEpi][modelo][tamanho];
+      const motivo=document.getElementById("motivo").value.trim();
+      salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo);
+      form.reset();codigoEpiSelect.disabled=true;codigoSelecionadoDiv.textContent="";
+    });
+
+    function atualizarListaRegistros(){
+      const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
+      let changed = false;
+      for(let i=0;i<registros.length;i++){
+        if(!registros[i].id){
+          registros[i].id = String(Date.now()) + "-" + i;
+          changed = true;
+        }
+      }
+      if(changed) localStorage.setItem("registrosEPI", JSON.stringify(registros));
+
+      const filtro=searchCS.value.trim().toLowerCase();
+      listaRegistros.innerHTML="";
+      const filtrados=registros.filter(r=>r.cs.toLowerCase().includes(filtro));
+      if(filtrados.length===0){
+        listaRegistros.innerHTML="<p style='text-align:center;color:#888;'>Nenhum registro encontrado.</p>";
+        atualizarResumoSemanal([]);return;
+      }
+      filtrados.forEach((r)=>{
+        const card=document.createElement("div");
+        card.className="card";
+
+        // pega nome/cargo do dicionário global
+        const pessoa = colaboradores[r.cs];
+        const nomePessoa = pessoa ? pessoa.nome : "Desconhecido";
+        const cargoPessoa = pessoa ? pessoa.cargo : "—";
+
+        card.innerHTML=`<p><span class='label'>👷🏻Nome:</span> ${nomePessoa}</p>
+        <p><span class='label'>💼Cargo:</span> ${cargoPessoa}</p>
+        <p><span class='label'>CS:</span> ${r.cs}</p>
+        <p><span class='label'>Tipo:</span> ${r.tipoEpi}</p>
+        <p><span class='label'>Modelo:</span> ${r.modelo}</p>
+        <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
+        <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
+        <p><span class='label'>Motivo:</span> ${r.motivo}</p>
+        <button class='deleteBtn' data-id='${r.id}'>Excluir</button>`;
+        listaRegistros.appendChild(card);
+      });
+
+      document.querySelectorAll(".deleteBtn").forEach(btn=>{
+        btn.onclick=()=>excluirRegistro(btn.getAttribute("data-id"));
+      });
+
+      atualizarResumoSemanal(filtrados);
+    }
+
+    async function excluirRegistro(id){
+      const registros = JSON.parse(localStorage.getItem("registrosEPI")) || [];
+      const novos = registros.filter(r=>String(r.id)!==String(id));
+      localStorage.setItem("registrosEPI", JSON.stringify(novos));
+
+      try{
+        const { getDocs, collection, deleteDoc } = await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
+        const snapshot = await getDocs(collection(window.db,"registrosEPI"));
+        const promises = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if(String(data.id)===String(id) || doc.id===String(id)){
+            promises.push(deleteDoc(doc.ref));
+          }
+        });
+        if(promises.length) await Promise.all(promises);
+      }catch(e){console.error("❌ Erro ao excluir na nuvem", e);}
+      atualizarListaRegistros();
+    }
+
+    function atualizarResumoSemanal(regs){
+      const resumo={};
+      const hoje=new Date();
+      regs.forEach(r=>{
+        const data=new Date(r.data);
+        const diff=(hoje-data)/(1000*60*60*24);
+        if(diff<=7)resumo[r.tipoEpi]=(resumo[r.tipoEpi]||0)+1;
+      });
+      tabelaSemanalBody.innerHTML="";
+      if(Object.keys(resumo).length===0){
+        tabelaSemanalBody.innerHTML="<tr><td colspan='2'>Nenhum registro nos últimos 7 dias</td></tr>";
+        return;
+      }
+      for(const tipo in resumo){
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${tipo}</td><td>${resumo[tipo]}</td>`;
+        tabelaSemanalBody.appendChild(tr);
+      }
+    }
+
+    searchCS.addEventListener("input",atualizarListaRegistros);
+    atualizarListaRegistros();
+
+    // --- 🔍 RECONHECE AUTOMATICAMENTE O CS E MOSTRA HISTÓRICO DO FIREBASE ---
+   document.getElementById("cs").addEventListener("input", async (e) => {
+      const cs = e.target.value.trim();
+      const infoDiv = document.getElementById("infoPessoa");
+      const historicoDiv = document.getElementById("historicoPessoa");
+
+      if (cs.length < 3) {
+        infoDiv.textContent = "";
+        historicoDiv.innerHTML = "";
+        return;
+      }
+
+      // usa o dicionário global 'colaboradores'
+      if (colaboradores[cs]) {
+        infoDiv.textContent = `👷 Nome: ${colaboradores[cs].nome} | Cargo: ${colaboradores[cs].cargo}`;
+      } else {
+        infoDiv.textContent = "⚠️ CS não encontrado no cadastro local";
+      }
+
+      try {
+        const { getDocs, collection, query, where, orderBy, limit } =
+          await import("https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js");
+
+        const q = query(
+          collection(window.db, "registrosEPI"),
+          where("cs", "==", cs),
+          orderBy("data", "desc"),
+          limit(5)
+        );
+
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          historicoDiv.innerHTML = "<i>Nenhum EPI registrado recentemente.</i>";
+          return;
+        }
+
+        let html = "<b>🧾 Últimos EPIs registrados:</b><ul style='margin-top:5px;'>";
+        snapshot.forEach((doc) => {
+          const r = doc.data();
+          const data = new Date(r.data);
+          const dataFormatada = `${data.getDate().toString().padStart(2,"0")}/${data.getMonth()+1}/${data.getFullYear()} ${data.getHours().toString().padStart(2,"0")}:${data.getMinutes().toString().padStart(2,"0")}`;
+          html += `<li>${r.tipoEpi} - ${r.modelo || ""} (${r.tamanho || ""}) <br><small>${dataFormatada}</small></li>`;
+        });
+        html += "</ul>";
+        historicoDiv.innerHTML = html;
+      } catch (e) {
+        console.error("", e);
+        historicoDiv.innerHTML = "";
+      }
+    });
+  </script>
+</body>
+</html>
+
     *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
     body{background:#f4f7f6;color:#333;min-height:100vh;padding:20px;}
     header{background:linear-gradient(90deg,#2e7d32,#388e3c);color:white;padding:20px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.2);margin-bottom:30px;}
@@ -290,3 +684,4 @@
   </script>
 </body>
 </html>
+
