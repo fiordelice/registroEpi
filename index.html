@@ -395,7 +395,9 @@ input[type="number"] {
       const [modelo,tamanho]=valor.split("|");
       const codigo=epiData[tipoEpi][modelo][tamanho];
       const motivo=document.getElementById("motivo").value.trim();
-      salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo);
+      const quantidade = parseInt(document.getElementById("quantidade").value) || 1;
+     salvarRegistro(cs,tipoEpi,modelo,tamanho,codigo,motivo,quantidade);
+
       form.reset();codigoEpiSelect.disabled=true;codigoSelecionadoDiv.textContent="";
     });
 
@@ -434,6 +436,7 @@ input[type="number"] {
         <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
         <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
         <p><span class='label'>Motivo:</span> ${r.motivo}</p>
+        <p><span class='label'>Quantidade:</span> ${r.quantidade || 1}</p>
         <button class='deleteBtn' data-id='${r.id}'>Excluir</button>`;
         listaRegistros.appendChild(card);
       });
@@ -471,7 +474,7 @@ input[type="number"] {
       regs.forEach(r=>{
         const data=new Date(r.data);
         const diff=(hoje-data)/(1000*60*60*24);
-        if(diff<=7)resumo[r.tipoEpi]=(resumo[r.tipoEpi]||0)+1;
+        if(diff<=7)resumo[r.tipoEpi]=(resumo[r.tipoEpi]||0)+(r.quantidade||1);
       });
       tabelaSemanalBody.innerHTML="";
       if(Object.keys(resumo).length===0){
