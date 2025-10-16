@@ -67,15 +67,12 @@ input[type="number"] {
     <select id="codigoEpi" required disabled>
       <option value="">Selecione o tipo de EPI primeiro</option>
     </select>
-
+  <label for="quantidade">Quantidade:</label>
+    <input type="number" id="quantidade" min="1" value="1" required />
     <div id="codigoSelecionado"></div>
 
     <label for="motivo">Motivo:</label>
     <input type="text" id="motivo" placeholder="Digite o motivo do uso" required />
-
-    <label for="quantidade">Quantidade:</label>
-    <input type="number" id="quantidade" min="1" value="1" required />
-
 
     <button type="submit">Registrar</button>
   </form>
@@ -434,9 +431,9 @@ input[type="number"] {
         <p><span class='label'>Tipo:</span> ${r.tipoEpi}</p>
         <p><span class='label'>Modelo:</span> ${r.modelo}</p>
         <p><span class='label'>Tamanho:</span> ${r.tamanho}</p>
+        <p><span class='label'>Quantidade:</span> ${r.quantidade || 1}</p>
         <p><span class='label'>Código SAP:</span> ${r.codigo}</p>
         <p><span class='label'>Motivo:</span> ${r.motivo}</p>
-        <p><span class='label'>Quantidade:</span> ${r.quantidade || 1}</p>
         <button class='deleteBtn' data-id='${r.id}'>Excluir</button>`;
         listaRegistros.appendChild(card);
       });
@@ -544,6 +541,7 @@ input[type="number"] {
   </script>
 </body>
 </html>
+
 
 
 
